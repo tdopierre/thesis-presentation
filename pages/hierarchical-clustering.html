@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <link href="/css/tailwind.min.css" rel="stylesheet">
+  <link href="/build/tailwind.min.css" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: Fontin;
+      src: url("/fonts/Fontin-Regular.otf");
+    }
+
+    hr {
+      background-color: black;
+      height: 2px;
+      margin: 5% auto;
+      border: 0;
+      width: 75%
+    }
+
+    .process-title {
+      font-size: 25px;
+      /*font-family: Fontin;*/
+    }
+
+    .process-step {
+      border-radius: 10px;
+      border: solid 2px #333;
+      margin: 5px 10px;
+      height: auto;
+      padding: 5px 10px;
+      /*font-family: 'Fontin';*/
+      font-size: 20px;
+      background-color: #eae9e0;
+    }
+
+    * {
+      font-family: Roboto;
+    }
+  </style>
+  <!-- <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet"> -->
+</head>
+
+<body>
+  <div id="drawArea" class="" style="width:75%; margin:auto"></div>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script>
+
+    var dataNum = 30;
+    const labeledDataPerClass = 5;
+    const unlabeledDataPerClass = 20;
+    const height = 900;
+    const width = 800;
+    const nLabeledClass = 4;
+    const unlabeledColor = "#ffffff";
+    const nUnlabeledClass = 10;
+    var clusterNum = 4;
+    let dataset = [];
+    var centroidArr = [];
+    var clusters = [];
+    const mergeDurationMiliseconds = 50;
+    let uuidSeed, seed, generateRandom;
+    let Action = class {
+      constructor(actionName, params) {
+        this.actionName = actionName;
+        this.params = params;
+      }
+    }
+    var actionIx = 0;
+    const actions = [];
+    actions.push(new Action("addProcessTitle", 'Initialization'));
+    actions.push(new Action("addProcessStep", 'Embed labeled data points'));
+
+    actions.push(new Action('drawDataset', { labeled: true, unlabeled: false }));
+    actions.push(new Action("addProcessStep", 'Add unlabeled data'));
+    actions.push(new Action('drawDataset', { labeled: true, unlabeled: true }));
+    actions.push(new Action("addProcessStep", 'Forget about labels (for now)'));
+    actions.push(new Action('drawDataset', { labeled: true, unlabeled: true, fill: unlabeledColor }));
+
+    actions.push(new Action("addProcessTitle", '(a) Folding'));
+    actions.push(new Action("addProcessStep", 'Iteratively merge two closest clusters'));
+    actions.push(new Action("computeClusters"));
+    actions.push(new Action("addProcessStep", 'Look back at labeled data'));
+    actions.push(new Action('drawDataset', { labeled: true, unlabeled: true }));
+    actions.push(new Action("addProcessTitle", '(b) Unfolding'));
+    actions.push(new Action("addProcessStep", 'Remove branches until all sub-trees have a unique label'));
+    actions.push(new Action("unfold"));
+    actions.push(new Action("addProcessStep", 'Assign pseudo-labels in each sub-tree'));
+    actions.push(new Action('assignPseudoLabels'));
+
+    actions.push(new Action("addProcessTitle", 'Comparison'));
+    actions.push(new Action("addOutputButtons"));
+
+    actions.push(new Action('drawDataset', { labeled: true, unlabeled: true, pseudoLabeled: true }));
+    actions.push(new Action('drawDataset', { labeled: true, unlabeled: true, pseudoLabeled: false }));
+    actions.push(new Action('drawDataset', { labeled: true, unlabeled: true, pseudoLabeled: true }));
+
+
+
+
+
+    // const labeledSeeds = [
+    //   {
+    //     x: width * (129 / 450),
+    //     y: height * (140 / 450)
+    //   },
+    //   {
+    //     x: width * (160 / 450),
+    //     y: height * (250 / 450)
+    //   },
+    // ];
+    //
+    // const unlabeledSeeds = [
+    //   {
+    //     x: width * (264 / 450),
+    //     y: height * (142 / 450)
+    //   },
+    //   {
+    //     x: width * (250 / 450),
+    //     y: height * (330 / 450)
+    //   }
+    // ];
+
+    // GOOD SEEDS
+    // 4936be49-c32e-47b7-a877-51b3711ad593
+    // 09a724b5-a0bf-427c-860c-60e8aee34c4f
+
+    // clusterColor = ['#a00', '#aa0', '#0a0', '#00a', '#0aa']
+    clusterColor = ['#0996f4', '#ff0', '#0f0', '#f7117c', '#0ff'];
+    centroidColor = ['#f00', '#ff0', '#0f0', '#00f', '#0ff'];
+
+    const svg = d3.select('#drawArea')
+      .append('div')
+      .attr({
+        'id': 'main'
+      })
+      .style({
+        'margin': '0 auto',
+        'display': '-webkit-box'
+      })
+      .append('svg')
+      .style({
+        'background-color': '1e1e1e',
+        'height': height + 'px',
+        'width': width + 'px'
+      });
+
+    //COLORS
+    var color = d3.scale.linear()
+      .range(["yellow", "purple", "green"])
+      .domain([0, 12, 25])
+      .interpolate(d3.interpolateHsl);
+    var timer = d3.timer(function (elapsed) {
+      d3.selectAll(".rainbow")
+        .style("fill", function (d, i) {
+          return color((i + elapsed / 50));
+        })
+    });
+
+    var process = d3.select('#main')
+      .append('div')
+      .attr({
+        'id': 'process',
+      })
+      .style({
+        'height': height + 'px',
+        'width': '318px',
+        'background-color': 'gray'
+      })
+    process.append('span')
+      .text("Select seed:")
+      .attr({
+        'class': 'ml-10 mr-8 font-bold'
+      })
+    process.append('select')
+      .attr({
+        'id': 'seed-select',
+        'class': 'mx-5'
+      })
+    var allGroup = [
+      'random',
+      '5a6467c2-2b49-4c61-87eb-d092d95d7ff0',
+      'ab175262-0a3f-4aad-bf58-79e9b42e632e',
+      'fa968202-9bba-4277-a761-ad56ec7f59c6'
+    ]
+    d3.select("#seed-select")
+      .style({
+        'width': '100px'
+      })
+      .attr({
+        'class': 'mx-5'
+      })
+      .selectAll('myOptions')
+      .data(allGroup)
+      .enter()
+      .append('option')
+      .text(function (d) { return d; }) // text showed in the menu
+      .attr("value", function (d) { return d; }) // corresponding value returned by the button
+
+    d3.select("#seed-select").on("change", function (d) {
+      // recover the option that has been chosen
+      var selectedOption = d3.select(this).property("value")
+      // run the updateChart function with this selected option
+      console.log('new seed', selectedOption)
+      reset(selectedOption);
+    })
+
+    //  Stepを進めるボタン
+    var buttonsDiv = process.append('div')
+      .style({
+        width: '90%',
+        height: '5%',
+        margin: '3% auto',
+        'text-align': 'center'
+      })
+    buttonsDiv.append('button')
+      .style({
+        // 'background-color': '#a00',
+        // 'border-radius': '10px',
+        // 'color': '#ddd',
+        // 'height': '40px',
+        'min-width': '35%',
+        // 'margin': '0 auto',
+        // 'float': 'left',
+        'font-size': '15px',
+        // 'text-align': 'center',
+        // 'font-family': 'Roboto'
+        // 'font-family': 'Fontin',
+      })
+      .attr('class', 'bg-red-700 hover:bg-red-800 text-white font-bold py-2 mx-5 px-2 rounded')
+      .on('click', doAction)
+      .text('Next Step');
+
+    //  初期化するボタン
+    buttonsDiv.append('button')
+      .style({
+        'min-width': '35%',
+        'font-size': '15px',
+        // 'font-family': 'Fontin',
+      })
+      .attr('class', 'bg-red-700 hover:bg-red-800 text-white font-bold py-2 mx-5 px-4 rounded')
+      .on('click', function () {
+        reset();
+      })
+      .text('Reset');
+    init();
+
+    function uuidv4() {
+      return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function addOutputButtons() {
+      resetProcessStepBackgrounds();
+      var buttonsDiv = process.append('div')
+        .style({
+          width: '90%',
+          height: '5%',
+          margin: '3% auto',
+          'text-align': 'center'
+        })
+        .attr({
+          class: 'output-buttons'
+        });
+      buttonsDiv.append('button')
+        .style({
+          // 'background-color': '#a00',
+          // 'border-radius': '10px',
+          // 'color': '#ddd',
+          // 'height': '40px',
+          'min-width': '35%',
+          // 'margin': '0 auto',
+          // 'float': 'left',
+          // 'font-size': '20px',
+          // 'text-align': 'center'
+        })
+        .attr('class', 'bg-red-700 hover:bg-red-800 text-white font-bold py-2 mx-5 px-4 rounded')
+        .on('click', drawBefore)
+        .text('Before');
+
+      //  初期化するボタン
+      buttonsDiv.append('button')
+        .style({
+          // 'background-color': '#a00',
+          // 'border-radius': '10px',
+          // 'color': '#ddd',
+          // 'height': '40px',
+          // 'margin': '0 5%',
+          // 'float': 'right',
+          'min-width': '35%',
+          // 'font-size': '20px',
+          // 'text-align': 'center',
+        })
+        .attr('class', 'bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 mx-5 px-4 rounded')
+        .on('click', drawAfter)
+        .text('After');
+    }
+
+    function drawBefore() {
+      svg.selectAll('line').transition().duration(1000).style({ opacity: 0 })
+      drawDataset({ labeled: true, unlabeled: true, pseudoLabeled: false });
+    }
+
+    function drawAfter() {
+      svg.selectAll('line').transition().duration(1000).style({ opacity: 1 })
+      drawDataset({ labeled: true, unlabeled: true, pseudoLabeled: true });
+    }
+
+    function resetProcessStepBackgrounds() {
+      process.selectAll('.process-step')
+        .style({
+          "background-color": "#abaaa2"
+        });
+    }
+
+    // init();
+    function addProcessStep(stepDescription) {
+      resetProcessStepBackgrounds();
+      process
+        .append('div')
+        .attr({
+          'class': 'process-step process-item'
+        })
+        .style({})
+        .attr('class', 'process-item process-step')
+        .text(stepDescription)
+    }
+
+    function addProcessTitle(title) {
+      resetProcessStepBackgrounds();
+      process.append('hr')
+        .attr('class', 'process-item');
+      process.append('div')
+        .style('text-align', 'center')
+        .attr('class', 'process-title process-item')
+        .text(title)
+    }
+
+    function reset(uuidSeed) {
+      d3.selectAll('circle').remove();
+      d3.selectAll('line').remove();
+      d3.selectAll('.process-item').remove();
+      d3.selectAll('.output-buttons').remove();
+      actionIx = 0;
+      init(uuidSeed);
+    }
+
+    function init(uuidSeed) {
+      if (uuidSeed === undefined || uuidSeed === 'random') {
+        uuidSeed = uuidv4();
+      }
+
+      // uuidSeed = '5a6467c2-2b49-4c61-87eb-d092d95d7ff0'; // 10/10 seed
+      // uuidSeed= 'ab175262-0a3f-4aad-bf58-79e9b42e632e'; // 7/10 seed
+      // uuidSeed= 'fa968202-9bba-4277-a761-ad56ec7f59c6'; // 9/10 seed
+
+      seed = xmur3(uuidSeed);
+      console.log("uuid seed:", uuidSeed);
+      generateRandom = sfc32(seed(), seed(), seed(), seed());
+      var labeledSeeds = [];
+      var unlabeledSeeds = [];
+
+      for (let i = 0; i < nLabeledClass; i++) {
+        labeledSeeds.push({
+          x: width * (0.2 + 0.6 * generateRandom()),
+          y: height * (0.2 + 0.6 * generateRandom()),
+        })
+      }
+
+      for (let i = 0; i < nUnlabeledClass; i++) {
+        unlabeledSeeds.push({
+          x: width * (0.2 + 0.6 * generateRandom()),
+          y: height * (0.2 + 0.6 * generateRandom()),
+        })
+      }
+
+
+      let i;
+      dataset = []
+      centroidArr = []
+      centroid = true;
+      first = false;
+      finish = false;
+
+      // CREATE DATASET - labeled
+      for (var c = 0; c < labeledSeeds.length; c++) {
+        for (i = 0; i < labeledDataPerClass; i++) {
+          rand = labeledSeeds[c];
+          randX = rand.x;
+
+          obj = {
+            x: parseInt(normalRand(rand.x, 30), 10),
+            y: parseInt(normalRand(rand.y, 30), 10),
+            // y: parseInt(normalRand(80 * rand + 100, 20), 10),
+            cluster: c + 1,
+            labeled: true
+          };
+          dataset.push(obj);
+        }
+
+        for (i = 0; i < unlabeledDataPerClass; i++) {
+          rand = labeledSeeds[c];
+          randX = rand.x;
+
+          obj = {
+            x: parseInt(normalRand(rand.x, 30), 10),
+            y: parseInt(normalRand(rand.y, 30), 10),
+            // y: parseInt(normalRand(80 * rand + 100, 20), 10),
+            cluster: -(c + 1)
+          };
+          dataset.push(obj);
+        }
+      }
+
+
+      // CREATE DATASET - unlabeled
+      for (var c = 0; c < unlabeledSeeds.length; c++) {
+        for (i = 0; i < unlabeledDataPerClass; i++) {
+          rand = unlabeledSeeds[c];
+          randX = rand.x;
+
+          obj = {
+            x: parseInt(normalRand(rand.x, 30), 10),
+            y: parseInt(normalRand(rand.y, 30), 10),
+            // y: parseInt(normalRand(80 * rand + 100, 20), 10),
+            cluster: 0
+          };
+          dataset.push(obj);
+        }
+      }
+    }
+
+    function drawDataset(params) {
+      if (params === undefined) {
+        params = {
+          labeled: true,
+          unlabeled: true,
+          pseudoLabeled: false
+        }
+      }
+      if (svg.selectAll('.data-point').size() === 0) {
+        svg.selectAll('rect')
+          .data(dataset)
+          .enter()
+          .append('circle')
+          .attr({ 'class': 'data-point' })
+      }
+
+      svg.selectAll('.data-point')
+        .data(dataset)
+        .transition()
+        .duration(400)
+        .attr({
+          'class': function (d, i) {
+            return 'data-point data-' + i
+          },
+          cx: function (d) {
+            return d.x;
+          },
+          cy: function (d) {
+            return d.y;
+          },
+          r: function (d) {
+            if ((params.labeled && d.labeled)) {
+              return 8
+            } else if ((params.unlabeled && !d.labeled)) {
+              return 5
+            } else {
+              return 0
+            }
+            // if ((params.labeled && d.labeled) || (params.unlabeled && !d.labeled)) {
+            //   return 5
+            // } else {
+            //   return 0
+            // }
+          },
+          'cluster': function (d) {
+            return d.cluster;
+          },
+          'fill': function (d) {
+            if (params.fill !== undefined) {
+              return params.fill
+            }
+            if (d.cluster > 0) {
+              return clusterColor[d.cluster - 1]
+            }
+            if (d.pseudoLabel !== undefined && params.pseudoLabeled) {
+              return clusterColor[d.pseudoLabel - 1]
+            }
+            return unlabeledColor;
+          },
+        })
+        .style({
+          'opacity': function (d) {
+            if (d.pseudoLabel !== undefined && params.pseudoLabeled) {
+              return 0.35
+            } else {
+              return 0.8
+            }
+          }
+        }
+        )
+    }
+
+    function removeDatasetColors() {
+      addProcessStep('Forget about labels (for now)');
+      svg.selectAll('circle')
+        .transition()
+        .duration(2000)
+        .attr({
+          fill: unlabeledColor
+        })
+    }
+
+    function colorizeDataset() {
+      svg.selectAll('circle')
+        .data(dataset)
+        .transition()
+        .duration(2000)
+        .attr({
+          "fill": function (d) {
+            if (d.cluster > 0) {
+              return clusterColor[d.cluster - 1]
+            }
+          }
+        })
+    }
+
+    // DRAW DATASET
+
+    function computeClusters() {
+      clusters = [];
+      for (i = 0; i < dataset.length; i++) {
+        clusters.push({
+          left: null,
+          right: null,
+          usable: true,
+          itemsIx: [i],
+          x: dataset[i].x,
+          y: dataset[i].y,
+          uniqueLabels: dataset[i].cluster > 0 ? [dataset[i].cluster] : []
+        })
+      }
+      while (true) {
+        // COMPUTE DISTANCES
+        var lowestDist = Infinity;
+        var couple = [];
+        for (i = 0; i < clusters.length - 1; i++) {
+          if (!clusters[i].usable) {
+            continue
+          }
+          for (j = i + 1; j < clusters.length; j++) {
+            if (!(clusters[j].usable)) {
+              continue
+            }
+            const dist = Math.sqrt((clusters[i].x - clusters[j].x) ** 2 + (clusters[i].y - clusters[j].y) ** 2);
+            if (dist < lowestDist) {
+              // console.log("found closer points", i, j, dist);
+              lowestDist = dist;
+              couple = [i, j];
+            }
+          }
+        }
+        if (lowestDist == Infinity) {
+          break
+        }
+        // console.log("Best couple", {
+        //   couple: couple,
+        //   dist: lowestDist
+        // })
+
+        const newItemsIx = clusters[couple[0]].itemsIx.concat(clusters[couple[1]].itemsIx);
+        const newX = newItemsIx.reduce((total, next) => total + dataset[next].x, 0) / newItemsIx.length;
+        const newY = newItemsIx.reduce((total, next) => total + dataset[next].y, 0) / newItemsIx.length;
+
+        const newCluster = {
+          left: couple[0],
+          right: couple[1],
+          usable: true,
+          itemsIx: clusters[couple[0]].itemsIx.concat(clusters[couple[1]].itemsIx),
+          uniqueLabels: [...new Set(clusters[couple[0]].uniqueLabels.concat(clusters[couple[1]].uniqueLabels))],
+          x: newX,
+          y: newY
+        };
+        const newClusterIx = clusters.length;
+        // const strokeWidth = (1 + 4 * ((clusters.length / dataset.length) - 1))
+        const strokeWidth = 0.5 + 5 * (lowestDist / 450);
+        const clustersLength = clusters.length;
+        setTimeout(() => {
+          svg.append('line')
+            .style("stroke", unlabeledColor)
+            .style("stroke-width", strokeWidth)
+            .attr({
+              x1: clusters[newCluster.left].x,
+              y1: clusters[newCluster.left].y,
+              x2: newCluster.x,
+              y2: newCluster.y,
+              class: "cluster-line",
+              from: newCluster.left,
+              to: newClusterIx
+            });
+
+          svg.append('line')
+            .style("stroke", unlabeledColor)
+            .style("stroke-width", strokeWidth)
+            .attr({
+              x1: clusters[newCluster.right].x,
+              y1: clusters[newCluster.right].y,
+              x2: newCluster.x,
+              y2: newCluster.y,
+              class: "cluster-line",
+              from: newCluster.right,
+              to: newClusterIx,
+            });
+
+          svg.append('circle')
+            .attr({
+              'class': 'data-' + clustersLength,
+              cx: newCluster.x,
+              cy: newCluster.y,
+              r: 0,
+              fill: unlabeledColor
+            })
+          svg.selectAll('.data-' + newCluster.left)
+            .transition()
+            .duration(mergeDurationMiliseconds)
+            .attr({
+              cx: newCluster.x,
+              cy: newCluster.y,
+              r: 0
+            })
+          svg.selectAll('.data-' + newCluster.right)
+            .transition()
+            .duration(mergeDurationMiliseconds)
+            .attr({
+              cx: newCluster.x,
+              cy: newCluster.y,
+              r: 0
+            })
+          svg.selectAll('.data-' + clustersLength)
+            .transition()
+            .delay(mergeDurationMiliseconds)
+            .duration(mergeDurationMiliseconds / 10)
+            .attr({
+              r: 5
+            });
+        }, (clusters.length - dataset.length) * mergeDurationMiliseconds)
+
+        // make used clusters unusable
+        for (i = 0; i < couple.length; i++) {
+          clusters[couple[i]].usable = false;
+        }
+
+        // Add new cluster
+        clusters.push(newCluster);
+        // console.log(newCluster)
+      }
+      // console.log("*** FINAL CLUSTERS ***\n", clusters);
+
+
+      // var dataPoint = svg.selectAll('rect')
+      //   .data(clusters.slice(-10))
+      //   .enter()
+      //   .append('circle')
+      //   .attr({
+      //     'class': 'data',
+      //     cx: function (d) {
+      //       return d.x;
+      //     },
+      //     cy: function (d) {
+      //       return d.y;
+      //     },
+      //     r: 10,
+      //     'cluster': function (d) {
+      //       return d.cluster;
+      //     },
+      //     'fill': 'gray'
+      //   })
+      //   .transition()
+      //   .duration(150)
+      //   .ease('bounce')
+      //   .attr({
+      //     r: 5
+      //   });
+    }
+
+    function assignPseudoLabels() {
+
+      function helper(clusterIx, labelIx) {
+        const cluster = clusters[clusterIx];
+        if (clusterIx < dataset.length) {
+          if (!dataset[clusterIx].labeled) {
+            dataset[clusterIx].pseudoLabel = labelIx
+          }
+        } else {
+          if (cluster.uniqueLabels.length > 1) {
+            helper(cluster.left);
+            helper(cluster.right);
+          } else if (cluster.uniqueLabels.length === 0) {
+            if (labelIx === undefined) {
+              // do nothing
+            } else {
+              helper(cluster.left, labelIx);
+              helper(cluster.right, labelIx);
+            }
+          } else if (cluster.uniqueLabels.length === 1) {
+            if (labelIx === undefined) {
+              helper(cluster.left, cluster.uniqueLabels[0]);
+              helper(cluster.right, cluster.uniqueLabels[0]);
+            } else {
+              helper(cluster.left, labelIx);
+              helper(cluster.right, labelIx);
+            }
+          }
+        }
+      }
+
+      helper(clusters.length - 1)
+      drawDataset({ labeled: true, unlabeled: true, pseudoLabeled: true })
+    }
+
+
+    function unfold() {
+      for (let i = clusters.length - 1; i >= 0; i--) {
+        const cluster = clusters[i];
+        if (cluster.uniqueLabels.length > 1) {
+          svg.selectAll('line')
+            .filter(function () {
+              return d3.select(this).attr('to') == i.toString()
+            })
+            .transition().duration(10 * mergeDurationMiliseconds).style({ "stroke-width": 0 })
+        }
+      }
+      svg.selectAll('.data-' + (clusters.length - 1)).transition().duration(10 * mergeDurationMiliseconds).attr({ r: 0 })
+    }
+
+    function doAction() {
+      if (actionIx >= 0 && actionIx < actions.length) {
+        const action = actions[actionIx];
+        if (action.params === undefined) {
+          window[action.actionName]();
+        } else {
+          window[action.actionName](action.params);
+        }
+        actionIx++;
+        // window[actionName]();
+      }
+    }
+
+    function sfc32(a, b, c, d) {
+      return function () {
+        a >>>= 0;
+        b >>>= 0;
+        c >>>= 0;
+        d >>>= 0;
+        var t = (a + b) | 0;
+        a = b ^ b >>> 9;
+        b = c + (c << 3) | 0;
+        c = (c << 21 | c >>> 11);
+        d = d + 1 | 0;
+        t = t + d | 0;
+        c = c + t | 0;
+        return (t >>> 0) / 4294967296;
+      }
+    }
+
+    function xmur3(str) {
+      for (var i = 0, h = 1779033703 ^ str.length; i < str.length; i++)
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353),
+          h = h << 13 | h >>> 19;
+      return function () {
+        h = Math.imul(h ^ h >>> 16, 2246822507);
+        h = Math.imul(h ^ h >>> 13, 3266489909);
+        return (h ^= h >>> 16) >>> 0;
+      }
+    }
+
+    // 正規分布を作成
+    function normalRand(mean, sigma) {
+      var a = 1 - generateRandom();
+      var b = 1 - generateRandom();
+      var c = Math.sqrt(-2 * Math.log(a));
+      if (0.5 - generateRandom() > 0) {
+        return c * Math.sin(Math.PI * 2 * b) * sigma + mean;
+      } else {
+        return c * Math.cos(Math.PI * 2 * b) * sigma + mean;
+      }
+    };
+  </script>
+</body>
+
+</html>

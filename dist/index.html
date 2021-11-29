@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>Few-shot intent classification in user-generated short texts: application to conversational agents</title>
+    <meta name="author" content="Thomas Dopierre">
+<!--    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">-->
+
+    <!--    <meta name="apple-mobile-web-app-capable" content="yes">-->
+    <!--    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">-->
+
+    <!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+
+    <link rel="stylesheet" href="/reset.61d817b8.css">
+    <link rel="stylesheet" href="/reveal.c606e89d.css">
+    <link rel="stylesheet" href="/simple.406ecadf.css" id="theme">
+    <link rel="stylesheet" href="/style.547c3eb8.css">
+    <link rel="stylesheet" type="text/css" href="/slides.9ad09f98.css">
+    <!--    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">-->
+
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+
+    <!--    &lt;!&ndash; Theme used for syntax highlighting of code &ndash;&gt;-->
+    <link rel="stylesheet" href="/monokai.4291b03f.css">
+    <style>@font-face {
+            font-family: Fontin;
+            src: url("/Fontin-Regular.14ce5939.otf");
+        }
+
+
+        .reveal h1,
+        .reveal h2,
+        .reveal h3,
+        .reveal h4,
+        .reveal h5,
+        .reveal h6,
+        .reveal p {
+            /*margin: 0 0 20px 0;*/
+            /*color: #eee8d5;*/
+            font-family: "Fontin", Impact, sans-serif;
+            /*line-height: 0.9em;*/
+            /*letter-spacing: 0.02em;*/
+            /*text-transform: uppercase;*/
+            text-shadow: None;
+        }
+
+        .reveal h3 {
+            margin: 0
+        }
+
+        hr {
+            height: 2px;
+            border: none;
+            background-color: lightgray;
+            margin: 0
+        }
+
+        .column {
+            float: left;
+            width: 50%;
+        }
+
+        /* Clear floats after the columns */
+        .row:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        .link-margin {
+            margin: 5px
+        }
+
+        .enumerate li {
+            margin: 0 0 2% 0
+        }
+
+        .reveal .footer {
+            position: absolute;
+            top: -2;
+            bottom: 1em;
+            left: 1em;
+            font-size: 0.5em;
+
+            right: 0;
+
+            margin: auto;
+            width: 100%;
+            text-align: center;
+            font-family: "Fontin", Impact, sans-serif;
+        }
+
+        .reveal .footer span {
+            margin: 1%
+        }
+
+        div {
+            font-family: "Fontin", Impact, sans-serif;
+        }
+
+        .slide-content {
+            margin-top: 2%;
+            text-align: left;
+            font-size: .8em;
+        }</style>
+<script src="/reset.61d817b8.js"></script><script src="/reveal.c606e89d.js"></script><script src="/simple.406ecadf.js"></script><script src="/style.547c3eb8.js"></script><script src="/slides.9ad09f98.js"></script><script src="/monokai.4291b03f.js"></script></head>
+
+<body>
+
+<div class="reveal">
+    <div class="footer">
+        <span>Thomas Dopierre </span>
+        <span>Few-Shot Intent Classification in user-generated short texts: application to Conversational Agents</span>
+        <span>26/11/2021</span>
+    </div>
+
+    <!-- Any section element inside of this container is displayed as a slide -->
+    <div class="slides">
+
+        <section class="center">
+
+            <!--            <img src="https://media.time4learning.com/uploads/benefits-of-multilingual-education-featured.png">-->
+
+
+            <h1 style="font-size:50px">Few-Shot Intent Classification in user-generated short texts: application to
+                Conversational Agents</h1>
+            <p>
+                <small>A thesis by <a href="https://thomasdopierre.com">Thomas Dopierre</a></small>
+            </p>
+            <div class="row" style="margin: 0 auto; width:700px; text-align: center">
+                <img src="/ujm.2bbcc576.png" style="width:30%; margin: 0 5%">
+                <img src="/meetic-logo.cfe2236c.png" style="width:30%">
+                <!--                <div class="column" style="width:25%"><img src="/figures/meetic-logo.png"></img></div>-->
+
+                <!--                <img src="/figures/meetic-logo.png" style="width:25%"></img>-->
+            </div>
+
+        </section>
+
+        <section data-auto-animate="">
+            <section>
+                <div>
+                    <h2 data-id="myid" class="text-pink-300">Test slide</h2>
+                </div>
+                <span class="text-pink-300">THis is ok</span>
+            </section>
+            <section class="center">
+                <div>
+                    <h2 data-id="myid">Introduction</h2>
+                </div>
+            </section>
+            <section data-auto-animate="">
+
+                <!--                <h2 data-id="myid">Meetic</h2>-->
+                <img src="/meetic-logo.cfe2236c.png" style="width:20%">
+                <hr data-id="title-separator">
+                <div class="slide-content">
+                    <ul class="enumerate">
+                        <li>Dating website created in 2001</li>
+                        <li>At the origin of more than 8 millions of couples</li>
+                        <li>More than 5 billion interactions between users in 2014</li>
+                        <li>Present in 15 countries, 13 languages</li>
+                        <li>First dating website to have a chatbot</li>
+                    </ul>
+                </div>
+
+            </section>
+            <section data-auto-animate="">
+
+                <!--                <h2 data-id="myid">Meetic</h2>-->
+                <h3> Lara <img src="/lara.ddd3fe4d.png" style="height:1em; vertical-align: middle; margin-left: 2%"></h3>
+                <hr data-id="title-separator">
+                <div class="slide-content">
+                    <span>Born in 2017, Lara is a conversational agent, with multiple goals</span>
+                </div>
+                <div style="  display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 10px; grid-auto-rows: minmax(100px, auto);">
+                    <div class="slide-content align-middle" style="grid-column: 1 / 3; grid-row: 1; vertical-align:center; background-color: red">
+                        <ul class="enumerate align-middle">
+
+                            <li class="fragment">Helps registering</li>
+                            <li class="fragment">Handling custumer-care requests</li>
+                            <li class="fragment">Profile recommendation</li>
+                        </ul>
+                    </div>
+                    <div class="fragment" style="grid-column: 3; grid-row: 1">
+                        <img src="/profile-reco.b02ddb49.png" style="height: 400px">
+                    </div>
+                </div>
+
+
+            </section>
+        </section>
+
+
+        <section data-auto-animate="">
+            <h4 data-id="IC-title">Intent Classification</h4>
+            <pre data-id="code-animation"><code class="python fa-text-width" data-trim="" data-line-numbers="|4-5|8-9|12-15">
+						from models import encoder, classifier
+
+
+						def embed_text(encoder: Encoder, text: str):
+							return encoder(text)
+
+
+						def predict_vector(classifier: Classifier, vector: List):
+							return classifier(vector)
+
+
+						def find_intentions(encoder, classifier, text):
+							vector = embed_text(encoder, text)
+							prediction = predict_vector(classifier, vector)
+							return prediction
+					</code></pre>
+        </section>
+
+
+        <section data-auto-animate="">
+            <section data-auto-animate="">
+                <h4 data-id="IC-title">Text Embedding</h4>
+                <pre data-id="code-animation"><code class="python fa-text-width" data-trim="" data-line-numbers="1-2">
+						def embed_text(encoder: Encoder, text: str) -> List:
+							return encoder(text)
+					</code></pre>
+            </section>
+            <section data-auto-animate="">
+                <h4 data-id="IC-title">Text Embedding - Bag of words</h4>
+                <hr data-id="separator">
+                <span class="fragment">
+					\[\begin{aligned}
+					x &amp;\in \left\{0, 1\right\}^{V} \\
+					V &amp;: \text{vocab size} \\
+					x_{i} &amp;= \indicator\left\{\text{word} \enspace i \enspace  \text{in} \enspace s\right\}
+					\end{aligned}
+					\]
+				</span>
+                <div class="row">
+                    <div class="column fragment">
+                        <h5 style="color:green">Pros</h5>
+                        <p>Easy to understand</p>
+                        <p>Interpretable</p>
+                    </div>
+                    <div class="column fragment">
+                        <h5 style="color:red">Cons</h5>
+                        <p>Sentence order?</p>
+                        <p>Synonyms?</p>
+                    </div>
+                </div>
+            </section>
+
+            <section data-auto-animate="" data-background="https://c.tenor.com/hR2ZbUCQOncAAAAC/transformers-bumblebee.gif">
+                <hr>
+                <h4>Text Embedding - Transformers</h4>
+                <hr>
+            </section>
+            <section data-auto-animate="">
+                <h4 data-id="IC-title">Text Embedding - Transformers</h4>
+                <hr>
+                <div>
+                    <p>Trained on language modeling tasks (next sentence prediction, masked language modeling)</p>
+                    <img src="https://amitness.com/images/nlp-ssl-masked-lm.png">
+                </div>
+            </section>
+            <section data-auto-animate="">
+                <h4 data-id="IC-title">Text Embedding - Transformers</h4>
+                <hr data-id="separator">
+                <img src="https://miro.medium.com/max/1838/1*BHzGVskWGS_3jEcYYi6miQ.png" style="width:45%">
+            </section>
+        </section>
+
+        <section>
+            <section>
+                <h3 data-id="IC-title">Multilingual Transformer</h3>
+                <hr>
+                <img src="https://raw.githubusercontent.com/UKPLab/sentence-transformers/master/docs/img/multilingual-distillation.png">
+                <p>Only need parallel data!</p>
+            </section>
+        </section>
+
+        <section>
+            <section data-auto-animate="">
+                <h3 data-id="IC-title">Architecture</h3>
+                <hr>
+                <h5>Before</h5>
+                <img src="/nlu-diagram.8bbef18b.svg" style="width:100%">
+            </section>
+            <section data-auto-animate="">
+                <h3 data-id="IC-title">Architecture</h3>
+                <hr>
+
+                <h5>After</h5>
+                <img src="/nlu-diagram-now.a800f14a.svg" style="width:100%">
+            </section>
+        </section>
+
+
+        <section data-auto-animate="">
+            <h3 data-id="IC-title">Results</h3>
+        </section>
+
+        <section data-state="stats" data-auto-animate="">
+            <h3 data-id="IC-title">Accuracy: <span id="accuracy-before" style="color:red">62.92%</span> to <span id="accuracy-after" style="color:green"></span></h3>
+        </section>
+
+        <section data-auto-animate="">
+            <section>
+                <h3>More detailed results...</h3>
+            </section>
+            <section>
+                <h3 data-id="IC-title">Positive / Negative ratings</h3>
+                <img src="/kibana-1.477e47b1.png">
+            </section>
+            <section>
+                <h3 data-id="IC-title">Overall rating</h3>
+                <img src="/kibana-2.8215e741.png">
+            </section>
+            <section>
+                <h3 data-id="IC-title">Rating per country</h3>
+                <img src="/kibana-3.8df41da3.png">
+            </section>
+            <section>
+                <h3 data-id="IC-title">Weekly rating change</h3>
+                <img src="/kibana-4.45be9b1f.png">
+            </section>
+        </section>
+
+        <section>
+            <h3 data-id="IC-title" class="r-fit-text">Thanks for your attention!</h3>
+            <hr>
+            <h5 style="margin-top: 50px">Resources</h5>
+            <p>Bag of words
+                <a href="https://fr.wikipedia.org/wiki/Sac_de_mots" class="link-margin">wiki</a>
+                <a href="https://fr.wikipedia.org/wiki/TF-IDF" class="link-margin">tfidf</a>
+            </p>
+            <p>
+                Transformers
+                <a href="https://jalammar.github.io/illustrated-transformer/" class="link-margin">blog</a>
+                <a href="https://arxiv.org/abs/1706.03762" class="link-margin">paper</a>
+            </p>
+            <p>
+                Multilingual
+                <a href="https://tfhub.dev/google/universal-sentence-encoder-multilingual-large/3" class="link-margin">model</a>
+                <a href="https://www.sbert.net/examples/training/multilingual/README.html" class="link-margin">docs</a>
+            </p>
+            <p> Presentation
+                <a href="https://FRDSE01154:8000" class="link-margin" target="_blank">slides</a>
+                <a href="https://revealjs.com/" class="link-margin" target="_blank">reveal.js</a></p>
+        </section>
+    </div>
+</div>
+
+<script src="/reveal.3d4e1a1d.js"></script>
+<script src="/zoom.e984e63e.js"></script>
+<script src="/notes.9c1da4eb.js"></script>
+<script src="/search.2e98e5dc.js"></script>
+<script src="/markdown.976507c4.js"></script>
+<script src="/highlight.e74c7d95.js"></script>
+
+<script src="/math.bf3e44a2.js"></script>
+<script src="/plugin.057c970b.js"></script>
+
+
+<!--for charts-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.2.0/chart.min.js"></script>
+<script src="/plugin.9626e28f.js"></script>
+
+<script>function sigmoid(t) {
+  return 1 / (1 + Math.exp(t));
+}
+
+function setAccuracy(v) {
+  document.getElementById("accuracy-after").innerHTML = v.toFixed(2) + "%";
+}
+
+function increase_accuracy() {
+  var now1 = Date.now() / 1000;
+  console.log("now is", now1);
+  var intervalHandler = window.setInterval(function () {
+    var now2 = Date.now() / 1000;
+    var value = 62.92 + 11.94 * (sigmoid(now2 - now1 - 10) - sigmoid(-10)) / (sigmoid(10) - sigmoid(-10));
+
+    if (value >= 74.86) {
+      value = 74.86;
+      clearInterval(intervalHandler);
+    }
+
+    setAccuracy(value);
+  }, 50);
+} // Also available as an ES module, see:
+// https://revealjs.com/initialization/
+
+
+Reveal.initialize({
+  progress: true,
+  history: true,
+  center: false,
+  hash: true,
+  math: {
+    mathjax: 'https://cdn.jsdelivr.net/gh/mathjax/mathjax@2.7.8/MathJax.js',
+    config: 'TeX-AMS_HTML-full',
+    // pass other options into `MathJax.Hub.Config()`
+    TeX: {
+      Macros: {
+        RR: "{\\bf R}",
+        indicator: "{\\bf 1}"
+      }
+    }
+  },
+  chart: {
+    defaults: {
+      color: 'lightgray',
+      // color of labels
+      scale: {
+        beginAtZero: true // ticks: {stepSize: 1},
+        // grid: {color: "lightgray"}, // color of grid lines
+
+      }
+    },
+    line: {} //   bar: {backgroundColor: ["rgba(20,220,220,.8)", "rgba(220,120,120,.8)", "rgba(20,120,220,.8)"]},
+    //   pie: {backgroundColor: [["rgba(0,0,0,.8)", "rgba(220,20,20,.8)", "rgba(20,220,20,.8)", "rgba(220,220,20,.8)", "rgba(20,20,220,.8)"]]},
+
+  },
+  // Learn about plugins: https://revealjs.com/plugins/
+  plugins: [RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight, RevealMath, RevealChart, RevealChalkboard]
+});
+Reveal.addEventListener('stats', function () {
+  console.log('stats called!');
+  increase_accuracy();
+});</script>
+
+</body>
+</html>
