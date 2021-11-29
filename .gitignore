@@ -60,3 +60,4 @@ _testmain.go
 #*.jpeg
 *.psd
 dist/
+.publish
