@@ -14,7 +14,7 @@ The bibliography at the end of the slides is created automatically by the [js/ha
 <span class="citation" citation-ref="tfidf"></span>
 ```
 
-If the `citation-ref` is unmatched, it will display as `[??]`. You can also cite multiple references at once using multiple values in `citation-ref` separated by commas.
+If the `citation-ref` is unmatched, it will display as `[??]`. You can also cite multiple references at once using multiple values in `citation-ref` separated by commas. You can **hover** the reference to have a quick look at the details.
 
 This script also creates dynamic values for both `Table` and `Figure`. When you add a figure / table to your presentation, simply name it using the following piece of html:
 ```html
