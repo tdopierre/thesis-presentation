@@ -13,15 +13,15 @@
 
     <!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
 
-    <link rel="stylesheet" href="dist/reset.css">
-    <link rel="stylesheet" href="dist/reveal.css">
-    <link rel="stylesheet" href="dist/theme/night.css" id="theme">
+    <!-- <link rel="stylesheet" href="dist/reset.css"> -->
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/night.css" id="theme">
     <link rel="stylesheet" href="plugin/chalkboard/style.css">
-    <link rel="stylesheet" type="text/css" href="build/tailwind.css">
+    <link rel="stylesheet" type="text/css" href="css/tailwind.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css"
         integrity="sha256-XoaMnoYC5TH6/+ihMEnospgm0J1PM/nioxbOUdnM8HY=" crossorigin="anonymous">
     <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
-    <link href="build/tailwind.css" rel="stylesheet">
+    <link href="css/tailwind.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="figures/icon.png">
 
 
@@ -39,7 +39,7 @@
     <style>
         @font-face {
             font-family: Fontin;
-            src: url("/fonts/Fontin-Regular.otf");
+            src: url("fonts/Fontin-Regular.otf");
         }
 
         .reveal h1,
@@ -178,10 +178,10 @@
                 </p>
                 <div class=" text-center flex w-3/4 items-center mx-auto mt-12">
 
-                    <img src="/figures/lahc-dark.png" class="h-32 ml-12 mr-20"></img>
+                    <img src="figures/lahc-dark.png" class="h-32 ml-12 mr-20"></img>
 
 
-                    <img src="/figures/meetic.png" class="h-32 mx-10"></img>
+                    <img src="figures/meetic.png" class="h-32 mx-10"></img>
 
 
                 </div>
@@ -6470,7 +6470,7 @@
     <!--d3js color scale-->
     <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
 
-    <script src="dist/reveal.js"></script>
+    <script src="reveal.js"></script>
 
     <script src="plugin/zoom/zoom.js"></script>
     <script src="plugin/notes/notes.js"></script>
@@ -6478,19 +6478,17 @@
     <script src="plugin/search/search.js"></script>
     <script src="plugin/markdown/markdown.js"></script>
     <script src="plugin/highlight/highlight.js"></script>
-    <script src="plugin/math/math.js"></script>
 
+    <script src="plugin/math/math.js"></script>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
     <script src="plugin/chalkboard/plugin.js"></script>
-    <!-- <script src="node_modules/chart.js/dist/chart.js"></script> -->
-
-
+    
     <!--for charts-->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.2.0/chart.min.js"></script> -->
-    <!-- <script src="plugin/chart/plugin.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.2.0/chart.min.js"></script>
+    <script src="plugin/chart/plugin.js"></script>
     <script src="js/lara-multilinguality-chart.js"></script>
-    <script src="node_modules/bibtex-parse-js/bibtexParse.js"></script>
+    <script src="js/bibtexParse.js"></script>
 
     <script>
         // Also available as an ES module, see:
@@ -6540,7 +6538,7 @@
             plugins: [RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight,
                 RevealMath, RevealChart, RevealChalkboard],
             dependencies: [
-                { src: 'node_modules/reveald3/reveald3.js' }
+                { src: 'js/reveald3.js' }
             ]
         });
         Reveal.addEventListener('stats', function () {

@@ -95,6 +95,28 @@ gulp.task('js-es5', () => {
     });
 })
 
+gulp.task('js-es5-src', () => {
+    return rollup({
+        cache: cache.umd,
+        input: 'js/index.js',
+        plugins: [
+            resolve(),
+            commonjs(),
+            babel(babelConfig),
+            terser()
+        ]
+    }).then(bundle => {
+        cache.umd = bundle.cache;
+        return bundle.write({
+            name: 'Reveal',
+            file: './reveal.js',
+            format: 'umd',
+            banner: banner,
+            sourcemap: true
+        });
+    });
+})
+
 // Creates an ES module bundle
 gulp.task('js-es6', () => {
     return rollup({
@@ -116,7 +138,12 @@ gulp.task('js-es6', () => {
         });
     });
 })
-gulp.task('js', gulp.parallel('js-es5', 'js-es6'));
+
+
+gulp.task('js-myscripts', () => gulp.src(['js/**/*'])
+    .pipe(gulp.dest('dist/js')))
+
+gulp.task('js', gulp.parallel('js-es5', 'js-es6', 'js-myscripts'));
 
 // Creates a UMD and ES module bundle for each of our
 // built-in plugins
@@ -158,6 +185,11 @@ gulp.task('plugins', () => {
     }));
 })
 
+
+gulp.task('dist-plugins', function () {
+    return gulp.src('./plugin/**/*')
+        .pipe(gulp.dest('./dist/plugin'));
+});
 // a custom pipeable step to transform Sass to CSS
 function compileSass() {
     return through.obj((vinylFile, encoding, callback) => {
@@ -180,18 +212,34 @@ function compileSass() {
     });
 }
 
+gulp.task('css-themes-src', () => gulp.src(['./css/theme/source/*.{sass,scss}'])
+    .pipe(compileSass())
+    .pipe(gulp.dest('./css/theme')))
+
 gulp.task('css-themes', () => gulp.src(['./css/theme/source/*.{sass,scss}'])
     .pipe(compileSass())
-    .pipe(gulp.dest('./dist/theme')))
+    .pipe(gulp.dest('./dist/css/theme')))
+
+
+gulp.task('css-core-src', () => gulp.src(['css/reveal.scss'])
+    .pipe(compileSass())
+    .pipe(autoprefixer())
+    .pipe(minify({ compatibility: 'ie9' }))
+    .pipe(header(banner))
+    .pipe(gulp.dest('./css')))
 
 gulp.task('css-core', () => gulp.src(['css/reveal.scss'])
     .pipe(compileSass())
     .pipe(autoprefixer())
     .pipe(minify({ compatibility: 'ie9' }))
     .pipe(header(banner))
-    .pipe(gulp.dest('./dist')))
+    .pipe(gulp.dest('./dist/css')))
 
-gulp.task('css', gulp.parallel('css-themes', 'css-core'))
+gulp.task('css-tailwind', () => gulp.src(['./css/tailwind.css', './css/tailwind.min.css'])
+    .pipe(gulp.dest('./dist/css')))
+
+
+gulp.task('css', gulp.parallel('css-themes', 'css-core', 'css-tailwind'))
 
 gulp.task('qunit', () => {
 
@@ -268,7 +316,6 @@ gulp.task('test', gulp.series('eslint', 'qunit'))
 
 gulp.task('default', gulp.series(gulp.parallel('js', 'css', 'plugins'), 'test'))
 
-gulp.task('build', gulp.parallel('js', 'css', 'plugins'))
 
 gulp.task('package', gulp.series('default', () =>
 
@@ -293,6 +340,13 @@ gulp.task('html', function () {
         .pipe(gulp.dest('./dist'));
 });
 
+gulp.task('fonts', function () {
+    return gulp.src('./fonts/**/*')
+        .pipe(gulp.dest('./dist/fonts'));
+});
+
+gulp.task('build', gulp.parallel('js', 'css', 'plugins', 'figures', 'html', 'fonts', 'dist-plugins'))
+
 gulp.task('reload', () => gulp.src(['*.html', '*.md'])
     .pipe(connect.reload()));
 
@@ -306,6 +360,7 @@ gulp.task('serve', () => {
     })
 
     gulp.watch(['*.html', '*.md'], gulp.series('reload'))
+    gulp.watch(['*.html'], gulp.series('html'))
 
     gulp.watch(['js/**'], gulp.series('js', 'reload', 'test'))
 
