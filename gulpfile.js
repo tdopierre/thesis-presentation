@@ -22,6 +22,10 @@ const minify = require('gulp-clean-css')
 const connect = require('gulp-connect')
 const autoprefixer = require('gulp-autoprefixer')
 
+// deploying to github pages
+const deploy = require('gulp-gh-pages');
+
+// liveserver config
 const root = yargs.argv.root || '.'
 const port = yargs.argv.port || 8000
 
@@ -379,3 +383,8 @@ gulp.task('serve', () => {
     gulp.watch(['test/*.html'], gulp.series('test'))
 
 })
+
+gulp.task('deploy', function () {
+    return gulp.src("./dist/**/*")
+        .pipe(deploy())
+});
